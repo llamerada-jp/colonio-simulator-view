@@ -8,7 +8,9 @@ import (
 )
 
 var (
-	mongoURI string
+	mongoURI        string
+	mongoDataBase   string
+	mongoCollection string
 )
 
 var rootCmd = &cobra.Command{
@@ -16,7 +18,8 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&mongoURI, "uri", "u", "", "URI of mongoDB to get source data")
+	rootCmd.PersistentFlags().StringVarP(&mongoURI, "uri", "u", "mongodb://localhost:27017", "URI of mongoDB to get source data")
+	rootCmd.PersistentFlags().StringVarP(&mongoDataBase, "database", "d", "logs", "database name of mongoDB to get source data")
 }
 
 // Execute is entry point for all commands
