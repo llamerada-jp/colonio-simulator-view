@@ -17,20 +17,28 @@ package accessor
 
 import (
 	"context"
+	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+const (
+	timeout = 10 * time.Second
+)
+
 // Accessor contain mongodb client and collections
 type Accessor struct {
-	ctx        context.Context
 	client     *mongo.Client
 	collection *mongo.Collection
 }
 
 // NewAccessor makes new connection to mongoDB using target URI and etc
-func NewAccessor(ctx context.Context, uri, database, collection string) (*Accessor, error) {
+func NewAccessor(uri, database, collection string) (*Accessor, error) {
+	// make context
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
 	// connect mongodb
 	c, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
@@ -41,7 +49,6 @@ func NewAccessor(ctx context.Context, uri, database, collection string) (*Access
 	coll := c.Database(database).Collection(collection)
 
 	return &Accessor{
-		ctx:        ctx,
 		client:     c,
 		collection: coll,
 	}, nil
@@ -49,5 +56,9 @@ func NewAccessor(ctx context.Context, uri, database, collection string) (*Access
 
 // Disconnect close the connection form mongDB
 func (acc *Accessor) Disconnect() {
-	acc.client.Disconnect(acc.ctx)
+	// make context
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	acc.client.Disconnect(ctx)
 }
