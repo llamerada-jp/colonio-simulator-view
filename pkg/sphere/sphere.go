@@ -13,36 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package cmd
+
+package sphere
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/llamerada-jp/simulator-view/pkg/accessor"
-	"github.com/llamerada-jp/simulator-view/pkg/sphere"
-	"github.com/spf13/cobra"
 )
 
-var sphereCmd = &cobra.Command{
-	Use:   "sphere",
-	Short: "View data for sphere",
-	Run: func(cmd *cobra.Command, args []string) {
-		// make accessor
-		acc, err := accessor.NewAccessor(mongoURI, mongoDataBase, mongoCollection)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "accessor:%v", err)
-		}
-		defer acc.Disconnect()
+// Run is an entory point for sphere module
+func Run(acc *accessor.Accessor) error {
+	firstTime, err := acc.GetEarliestTime()
+	if err != nil {
+		return err
+	}
+	fmt.Println(firstTime)
 
-		err = sphere.Run(acc)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "sphere:%v", err)
-		}
-	},
-}
+	lastTime, err := acc.GetEarliestTime()
+	if err != nil {
+		return err
+	}
+	fmt.Println(lastTime)
 
-func init() {
-	sphereCmd.PersistentFlags().StringVarP(&mongoCollection, "collection", "c", "sphere", "collection name of mongoDB to get source data")
-	rootCmd.AddCommand(sphereCmd)
+	logs, err := acc.GetByTime(firstTime)
+	fmt.Println(logs)
+
+	return nil
 }
