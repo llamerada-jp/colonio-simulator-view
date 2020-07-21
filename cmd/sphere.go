@@ -35,7 +35,8 @@ var sphereCmd = &cobra.Command{
 		}
 		defer acc.Disconnect()
 
-		err = sphere.Run(acc)
+		s := sphere.NewInstance(acc)
+		err = s.Run()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "sphere:%v", err)
 		}
