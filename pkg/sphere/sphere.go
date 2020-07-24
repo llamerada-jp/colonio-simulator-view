@@ -21,22 +21,19 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/go-gl/gl/v2.1/gl"
-	"github.com/go-gl/glfw/v3.3/glfw"
-	"github.com/llamerada-jp/simulator-view/pkg/accessor"
+	"github.com/llamerada-jp/simulator-view/pkg/utils"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 const (
-	width                  = 800
-	height                 = 600
 	messageCurrentPosition = "current position"
 )
 
 // Sphere is the instance for sphere module
 type Sphere struct {
-	acc   *accessor.Accessor
-	nodes map[string]*Node
+	accessor *utils.Accessor
+	nodes    map[string]*Node
+	gl       *utils.GL
 }
 
 // Node containes last information for each time
@@ -61,36 +58,18 @@ func init() {
 }
 
 // NewInstance makes a new instance of Sphere
-func NewInstance(acc *accessor.Accessor) *Sphere {
+func NewInstance(acc *utils.Accessor) *Sphere {
 	return &Sphere{
-		acc:   acc,
-		nodes: make(map[string]*Node),
+		accessor: acc,
+		nodes:    make(map[string]*Node),
+		gl:       utils.NewGL(),
 	}
 }
 
 // Run is an entory point for sphere module
 func (s *Sphere) Run() error {
-	if err := glfw.Init(); err != nil {
-		log.Fatalln("failed to initialize glfw:", err)
-	}
-	defer glfw.Terminate()
-
-	glfw.WindowHint(glfw.Resizable, glfw.False)
-	glfw.WindowHint(glfw.ContextVersionMajor, 3)
-	glfw.WindowHint(glfw.ContextVersionMinor, 2)
-	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
-	window, err := glfw.CreateWindow(width, height, "simulator-view", nil, nil)
-	if err != nil {
-		log.Fatalln("failed to CreateWindow:", err)
-	}
-	window.MakeContextCurrent()
-
-	if err := gl.Init(); err != nil {
-		log.Fatalln("failed to initialize gl:", err)
-	}
-
-	current, err := s.acc.GetEarliestTime()
+	// get time range from mongodb
+	current, err := s.accessor.GetEarliestTime()
 	if err != nil {
 		return err
 	}
@@ -98,7 +77,7 @@ func (s *Sphere) Run() error {
 		log.Fatalln("nothing data")
 	}
 
-	last, err := s.acc.GetLastTime()
+	last, err := s.accessor.GetLastTime()
 	if err != nil {
 		return err
 	}
@@ -107,51 +86,34 @@ func (s *Sphere) Run() error {
 		return err
 	}
 
-	s.setupScene()
-	for !window.ShouldClose() {
+	// setup opengl
+	s.gl.Setup()
+	defer s.gl.Quit()
+
+	// main loop until closing the window or existing data
+	for s.gl.Loop() {
 		*current = current.Add(time.Second)
 		if current.UnixNano() > last.UnixNano() {
 			break
 		}
 
-		gl.Clear(gl.COLOR_BUFFER_BIT)
+		// update data
 		if err = s.updateByLogs(current); err != nil {
 			return err
 		}
-		//drawScene()
-		window.SwapBuffers()
-		glfw.PollEvents()
+
+		s.gl.SetRGB(0.0, 0.0, 1.0)
+		s.gl.Point3(0.0, 0.0, 0.0)
+
+		s.gl.SetRGB(0.0, 1.0, 0.0)
+		s.gl.Point3(1.0, 1.0, 0.0)
 	}
 
 	return nil
 }
 
-func (s *Sphere) setupScene() {
-	gl.Enable(gl.DEPTH_TEST)
-	gl.Enable(gl.LIGHTING)
-
-	gl.ClearColor(0.5, 0.5, 0.5, 0.0)
-	gl.ClearDepth(1)
-	gl.DepthFunc(gl.LEQUAL)
-
-	ambient := []float32{0.5, 0.5, 0.5, 1}
-	diffuse := []float32{1, 1, 1, 1}
-	lightPosition := []float32{-5, 5, 10, 0}
-	gl.Lightfv(gl.LIGHT0, gl.AMBIENT, &ambient[0])
-	gl.Lightfv(gl.LIGHT0, gl.DIFFUSE, &diffuse[0])
-	gl.Lightfv(gl.LIGHT0, gl.POSITION, &lightPosition[0])
-	gl.Enable(gl.LIGHT0)
-
-	gl.MatrixMode(gl.PROJECTION)
-	gl.LoadIdentity()
-	f := ((float64(width) / height) - 1) / 2
-	gl.Frustum(-1-f, 1+f, -1, 1, 1.0, 10.0)
-	gl.MatrixMode(gl.MODELVIEW)
-	gl.LoadIdentity()
-}
-
 func (s *Sphere) updateByLogs(current *time.Time) error {
-	records, err := s.acc.GetByTime(current)
+	records, err := s.accessor.GetByTime(current)
 	if err != nil {
 		return err
 	}
@@ -171,7 +133,7 @@ func (s *Sphere) updateByLogs(current *time.Time) error {
 	return nil
 }
 
-func (s *Sphere) getNode(record *accessor.Record) *Node {
+func (s *Sphere) getNode(record *utils.Record) *Node {
 	nid := record.NID
 	if _, ok := s.nodes[nid]; !ok {
 		s.nodes[nid] = &Node{

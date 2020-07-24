@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/llamerada-jp/simulator-view/pkg/accessor"
 	"github.com/llamerada-jp/simulator-view/pkg/sphere"
+	"github.com/llamerada-jp/simulator-view/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -29,7 +29,7 @@ var sphereCmd = &cobra.Command{
 	Short: "View data for sphere",
 	Run: func(cmd *cobra.Command, args []string) {
 		// make accessor
-		acc, err := accessor.NewAccessor(mongoURI, mongoDataBase, mongoCollection)
+		acc, err := utils.NewAccessor(mongoURI, mongoDataBase, mongoCollection)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "accessor:%v", err)
 		}

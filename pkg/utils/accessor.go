@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package accessor
+package utils
 
 import (
 	"context"
