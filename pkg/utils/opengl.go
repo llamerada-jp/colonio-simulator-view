@@ -99,7 +99,36 @@ func (g *GL) SetRGB(red, green, blue float32) {
 	g.colorB = blue
 }
 
-// Point3 draw point
+// Line3 draw a line at 3d coordinate space
+func (g *GL) Line3(x1, y1, z1, x2, y2, z2 float32) {
+	vertices := []float32{
+		x1, y1, z1,
+		x2, y2, z2,
+	}
+
+	fragments := []float32{
+		g.colorR, g.colorG, g.colorB,
+		g.colorR, g.colorG, g.colorB,
+	}
+
+	var vertexArrayObject uint32
+	gl.GenVertexArrays(1, &vertexArrayObject)
+	defer gl.DeleteVertexArrays(1, &vertexArrayObject)
+	gl.BindVertexArray(vertexArrayObject)
+
+	vertexBuffer := g.makeAndUseBuffer(0, vertices)
+	defer gl.DeleteBuffers(1, &vertexBuffer)
+
+	fragmentBuffer := g.makeAndUseBuffer(1, fragments)
+	defer gl.DeleteBuffers(1, &fragmentBuffer)
+
+	gl.DrawArrays(gl.LINES, 0, 2)
+
+	gl.BindVertexArray(0)
+	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+}
+
+// Point3 draw point at 3d coordinate space
 func (g *GL) Point3(x, y, z float32) {
 	vertices := []float32{
 		x - 0.1, y - 0.1, z,
@@ -122,21 +151,11 @@ func (g *GL) Point3(x, y, z float32) {
 	defer gl.DeleteVertexArrays(1, &vertexArrayObject)
 	gl.BindVertexArray(vertexArrayObject)
 
-	var vertexBuffer uint32
-	gl.GenBuffers(1, &vertexBuffer)
+	vertexBuffer := g.makeAndUseBuffer(0, vertices)
 	defer gl.DeleteBuffers(1, &vertexBuffer)
-	gl.BindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
-	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STREAM_DRAW)
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
-	gl.EnableVertexAttribArray(0)
 
-	var fragmentBuffer uint32
-	gl.GenBuffers(1, &fragmentBuffer)
+	fragmentBuffer := g.makeAndUseBuffer(1, fragments)
 	defer gl.DeleteBuffers(1, &fragmentBuffer)
-	gl.BindBuffer(gl.ARRAY_BUFFER, fragmentBuffer)
-	gl.BufferData(gl.ARRAY_BUFFER, len(fragments)*4, gl.Ptr(fragments), gl.STREAM_DRAW)
-	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
-	gl.EnableVertexAttribArray(1)
 
 	gl.DrawArrays(gl.TRIANGLES, 0, 3)
 	gl.DrawArrays(gl.TRIANGLES, 2, 3)
@@ -214,4 +233,14 @@ func (g *GL) setupShader(source string, shaderType uint32) uint32 {
 	}
 
 	return shader
+}
+
+func (g *GL) makeAndUseBuffer(location uint32, slice []float32) uint32 {
+	var buffer uint32
+	gl.GenBuffers(1, &buffer)
+	gl.BindBuffer(gl.ARRAY_BUFFER, buffer)
+	gl.BufferData(gl.ARRAY_BUFFER, len(slice)*4, gl.Ptr(slice), gl.STREAM_DRAW)
+	gl.VertexAttribPointer(location, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
+	gl.EnableVertexAttribArray(location)
+	return buffer
 }

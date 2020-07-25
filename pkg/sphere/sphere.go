@@ -107,6 +107,9 @@ func (s *Sphere) Run() error {
 
 		s.gl.SetRGB(0.0, 1.0, 0.0)
 		s.gl.Point3(1.0, 1.0, 0.0)
+
+		s.gl.SetRGB(1.0, 0.0, 0.0)
+		s.gl.Line3(0.0, 0.0, 0.0, 1.0, 1.0, 0.0)
 	}
 
 	return nil
