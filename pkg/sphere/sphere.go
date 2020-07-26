@@ -59,11 +59,11 @@ func init() {
 }
 
 // NewInstance makes a new instance of Sphere
-func NewInstance(acc *utils.Accessor) *Sphere {
+func NewInstance(acc *utils.Accessor, gl *utils.GL) *Sphere {
 	return &Sphere{
 		accessor: acc,
 		nodes:    make(map[string]*Node),
-		gl:       utils.NewGL(),
+		gl:       gl,
 	}
 }
 
@@ -90,6 +90,8 @@ func (s *Sphere) Run() error {
 	// setup opengl
 	s.gl.Setup()
 	defer s.gl.Quit()
+
+	s.gl.SetImageDigit(int(math.Log10(last.Sub(*current).Seconds()) + 1.0))
 
 	// main loop until closing the window or existing data
 	for s.gl.Loop() {

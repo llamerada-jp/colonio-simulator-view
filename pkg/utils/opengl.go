@@ -17,7 +17,12 @@
 package utils
 
 import (
+	"fmt"
+	"image"
+	"image/color"
+	"image/png"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
@@ -31,7 +36,8 @@ const (
 
 // GL containing any instances of OpenGL
 type GL struct {
-	program      uint32
+	program uint32
+
 	window       *glfw.Window
 	windowWidth  int
 	windowHeight int
@@ -39,14 +45,21 @@ type GL struct {
 	pixelHeight  float64
 	rateX        float64
 	rateY        float64
-	colorR       float32
-	colorG       float32
-	colorB       float32
+
+	imageName string
+	digit     int
+	index     int
+
+	colorR float32
+	colorG float32
+	colorB float32
 }
 
 // NewGL makes new utility instance of OpenGL
-func NewGL() *GL {
-	return &GL{}
+func NewGL(imageName string) *GL {
+	return &GL{
+		imageName: imageName,
+	}
 }
 
 // Setup OpenGL and create a new window
@@ -88,29 +101,25 @@ func (g *GL) Quit() {
 func (g *GL) Loop() bool {
 	g.window.SwapBuffers()
 
+	if g.index != 0 && len(g.imageName) != 0 {
+		g.saveImage()
+	}
+	g.index++
+
 	// clear and draw
 	defer func() {
 		glfw.PollEvents()
-
-		width, height := g.window.GetSize()
-		if width != g.windowWidth || height != g.windowHeight {
-			g.windowWidth = width
-			g.windowHeight = height
-			g.pixelWidth = 1.0 / float64(width)
-			g.pixelHeight = 1.0 / float64(height)
-			if width > height {
-				g.rateX = float64(height) / float64(width)
-				g.rateY = 1.0
-			} else {
-				g.rateX = 1.0
-				g.rateY = float64(width) / float64(height)
-			}
-		}
-
+		g.checkWindowSize()
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 	}()
 
 	return !g.window.ShouldClose()
+}
+
+// SetImageDigit sets digit for saving image
+func (g *GL) SetImageDigit(digit int) {
+	g.digit = digit
+	g.index = 0
 }
 
 // SetRGB set fill color
@@ -266,4 +275,53 @@ func (g *GL) makeAndUseBuffer(location uint32, slice []float32) uint32 {
 	gl.VertexAttribPointer(location, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
 	gl.EnableVertexAttribArray(location)
 	return buffer
+}
+
+func (g *GL) checkWindowSize() {
+	width, height := g.window.GetSize()
+	if width != g.windowWidth || height != g.windowHeight {
+		g.windowWidth = width
+		g.windowHeight = height
+		g.pixelWidth = 1.0 / float64(width)
+		g.pixelHeight = 1.0 / float64(height)
+		if width > height {
+			g.rateX = float64(height) / float64(width)
+			g.rateY = 1.0
+		} else {
+			g.rateX = 1.0
+			g.rateY = float64(width) / float64(height)
+		}
+	}
+}
+
+func (g *GL) saveImage() {
+	digitStr := fmt.Sprintf("%0."+fmt.Sprintf("%d", g.digit)+"d", g.index)
+	fileName := strings.Replace(g.imageName, "@", digitStr, -1)
+
+	dataBuffer := make([]uint8, g.windowWidth*g.windowHeight*3)
+
+	gl.ReadBuffer(gl.BACK)
+
+	gl.ReadPixels(0, 0, int32(g.windowWidth), int32(g.windowHeight),
+		gl.BGR, gl.UNSIGNED_BYTE, gl.Ptr(&dataBuffer[0]))
+
+	img := image.NewRGBA(image.Rect(0, 0, g.windowHeight, g.windowHeight))
+	idx := 0
+	for y := 0; y < g.windowHeight; y++ {
+		for x := 0; x < g.windowWidth; x++ {
+			img.Set(x, g.windowHeight-y-1, color.RGBA{dataBuffer[idx+2], dataBuffer[idx+1], dataBuffer[idx], 255})
+			idx += 3
+		}
+	}
+
+	f, err := os.Create(fileName)
+	if err != nil {
+		log.Fatalln("File create error : ", err)
+	}
+	defer f.Close()
+
+	err = png.Encode(f, img)
+	if err != nil {
+		log.Fatalln("Encodeing png error : ", err)
+	}
 }

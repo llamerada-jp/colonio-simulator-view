@@ -35,7 +35,7 @@ var sphereCmd = &cobra.Command{
 		}
 		defer acc.Disconnect()
 
-		s := sphere.NewInstance(acc)
+		s := sphere.NewInstance(acc, utils.NewGL(imageName))
 		err = s.Run()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "sphere:%v", err)
