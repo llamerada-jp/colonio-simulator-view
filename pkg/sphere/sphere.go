@@ -18,6 +18,7 @@ package sphere
 
 import (
 	"log"
+	"math"
 	"runtime"
 	"time"
 
@@ -102,14 +103,8 @@ func (s *Sphere) Run() error {
 			return err
 		}
 
-		s.gl.SetRGB(0.0, 0.0, 1.0)
-		s.gl.Point3(0.0, 0.0, 0.0)
-
-		s.gl.SetRGB(0.0, 1.0, 0.0)
-		s.gl.Point3(1.0, 1.0, 0.0)
-
-		s.gl.SetRGB(1.0, 0.0, 0.0)
-		s.gl.Line3(0.0, 0.0, 0.0, 1.0, 1.0, 0.0)
+		// draw data
+		s.draw()
 	}
 
 	return nil
@@ -146,4 +141,18 @@ func (s *Sphere) getNode(record *utils.Record) *Node {
 	node := s.nodes[nid]
 	node.Timestamp = record.TimeNtv
 	return node
+}
+
+func (s *Sphere) draw() {
+	s.gl.SetRGB(0.0, 0.8, 0.2)
+	for _, node := range s.nodes {
+		s.gl.Point3(s.convertCoordinate(node.x, node.y))
+	}
+}
+
+func (s *Sphere) convertCoordinate(xi, yi float64) (xo, yo, zo float64) {
+	xo = math.Cos(xi) * math.Cos(yi)
+	yo = math.Sin(yi)
+	zo = math.Sin(xi) * math.Cos(yi)
+	return
 }

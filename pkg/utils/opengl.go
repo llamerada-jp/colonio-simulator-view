@@ -31,11 +31,17 @@ const (
 
 // GL containing any instances of OpenGL
 type GL struct {
-	program uint32
-	window  *glfw.Window
-	colorR  float32
-	colorG  float32
-	colorB  float32
+	program      uint32
+	window       *glfw.Window
+	windowWidth  int
+	windowHeight int
+	pixelWidth   float64
+	pixelHeight  float64
+	rateX        float64
+	rateY        float64
+	colorR       float32
+	colorG       float32
+	colorB       float32
 }
 
 // NewGL makes new utility instance of OpenGL
@@ -81,11 +87,26 @@ func (g *GL) Quit() {
 // Loop swap and clear buffer, and poll events. return false is program should quit
 func (g *GL) Loop() bool {
 	g.window.SwapBuffers()
-	// time.Sleep(time.Second)
 
 	// clear and draw
 	defer func() {
 		glfw.PollEvents()
+
+		width, height := g.window.GetSize()
+		if width != g.windowWidth || height != g.windowHeight {
+			g.windowWidth = width
+			g.windowHeight = height
+			g.pixelWidth = 1.0 / float64(width)
+			g.pixelHeight = 1.0 / float64(height)
+			if width > height {
+				g.rateX = float64(height) / float64(width)
+				g.rateY = 1.0
+			} else {
+				g.rateX = 1.0
+				g.rateY = float64(width) / float64(height)
+			}
+		}
+
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 	}()
 
@@ -100,10 +121,10 @@ func (g *GL) SetRGB(red, green, blue float32) {
 }
 
 // Line3 draw a line at 3d coordinate space
-func (g *GL) Line3(x1, y1, z1, x2, y2, z2 float32) {
+func (g *GL) Line3(x1, y1, z1, x2, y2, z2 float64) {
 	vertices := []float32{
-		x1, y1, z1,
-		x2, y2, z2,
+		float32(x1), float32(y1), float32(z1),
+		float32(x2), float32(y2), float32(z2),
 	}
 
 	fragments := []float32{
@@ -129,13 +150,15 @@ func (g *GL) Line3(x1, y1, z1, x2, y2, z2 float32) {
 }
 
 // Point3 draw point at 3d coordinate space
-func (g *GL) Point3(x, y, z float32) {
+func (g *GL) Point3(x, y, z float64) {
+	pointWidth := 4.0 * g.pixelWidth
+	pointHeight := 4.0 * g.pixelHeight
 	vertices := []float32{
-		x - 0.1, y - 0.1, z,
-		x + 0.1, y - 0.1, z,
-		x + 0.1, y + 0.1, z,
-		x - 0.1, y - 0.1, z,
-		x - 0.1, y + 0.1, z,
+		float32(x - pointWidth), float32(y - pointHeight), float32(z),
+		float32(x + pointWidth), float32(y - pointHeight), float32(z),
+		float32(x + pointWidth), float32(y + pointHeight), float32(z),
+		float32(x - pointWidth), float32(y - pointHeight), float32(z),
+		float32(x - pointWidth), float32(y + pointHeight), float32(z),
 	}
 
 	fragments := []float32{
