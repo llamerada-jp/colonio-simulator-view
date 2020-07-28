@@ -27,7 +27,10 @@ import (
 )
 
 const (
-	messageCurrentPosition = "current position"
+	messageCurrentPosition   = "current position"
+	messageLinks             = "links"
+	messageRouting1DRequired = "routing 1d required"
+	messageRouting2DRequired = "routing 2d required"
 )
 
 // Sphere is the instance for sphere module
@@ -39,10 +42,13 @@ type Sphere struct {
 
 // Node containes last information for each time
 type Node struct {
-	NID       string
-	x         float64
-	y         float64
-	Timestamp time.Time
+	nid        string
+	x          float64
+	y          float64
+	links      []string
+	required1D []string
+	required2D []string
+	timestamp  time.Time
 }
 
 // ParameterCurrentPosition is for decoding parameter of `current position` log
@@ -51,6 +57,19 @@ type ParameterCurrentPosition struct {
 		X float64 `bson:"x"`
 		Y float64 `bson:"y"`
 	} `bson:"coordinate"`
+}
+
+// ParameterLinks is for decodeing paramter of `links` log
+type ParameterLinks struct {
+	Nids []string `bson:"nids"`
+}
+
+// ParameterRouting2DRequired is for decodeing paramter of `routing 2d required` log
+type ParameterRouting2DRequired struct {
+	Nids map[string]struct {
+		X float64 `bson:"x"`
+		Y float64 `bson:"y"`
+	}
 }
 
 func init() {
@@ -106,7 +125,7 @@ func (s *Sphere) Run() error {
 		}
 
 		// draw data
-		s.draw()
+		s.draw(current)
 	}
 
 	return nil
@@ -128,6 +147,35 @@ func (s *Sphere) updateByLogs(current *time.Time) error {
 			node := s.getNode(&record)
 			node.x = p.Coordinate.X
 			node.y = p.Coordinate.Y
+
+		case messageLinks:
+			var p ParameterLinks
+			if err = bson.Unmarshal(record.Param, &p); err != nil {
+				return err
+			}
+			node := s.getNode(&record)
+			node.links = p.Nids
+
+		case messageRouting1DRequired:
+			var p ParameterLinks
+			if err = bson.Unmarshal(record.Param, &p); err != nil {
+				return err
+			}
+			node := s.getNode(&record)
+			node.required1D = p.Nids
+
+		case messageRouting2DRequired:
+			var p ParameterRouting2DRequired
+			if err = bson.Unmarshal(record.Param, &p); err != nil {
+				return err
+			}
+			node := s.getNode(&record)
+			node.required2D = make([]string, len(p.Nids))
+			idx := 0
+			for k := range p.Nids {
+				node.required2D[idx] = k
+				idx++
+			}
 		}
 	}
 	return nil
@@ -137,18 +185,35 @@ func (s *Sphere) getNode(record *utils.Record) *Node {
 	nid := record.NID
 	if _, ok := s.nodes[nid]; !ok {
 		s.nodes[nid] = &Node{
-			NID: nid,
+			nid: nid,
 		}
 	}
 	node := s.nodes[nid]
-	node.Timestamp = record.TimeNtv
+	node.timestamp = record.TimeNtv
 	return node
 }
 
-func (s *Sphere) draw() {
-	s.gl.SetRGB(0.0, 0.8, 0.2)
+func (s *Sphere) draw(current *time.Time) {
 	for _, node := range s.nodes {
+		s.gl.SetRGB(0.0, 0.8, 0.2)
 		s.gl.Point3(s.convertCoordinate(node.x, node.y))
+
+		for _, link := range node.links {
+			if pair, ok := s.nodes[link]; ok {
+				if pair.hasLink(node.nid) {
+					if node.hasRequired2D(pair.nid) {
+						s.gl.SetRGB(0.0, 1.0, 0.2)
+					} else {
+						s.gl.SetRGB(0.6, 0.6, 0.6)
+					}
+				} else {
+					s.gl.SetRGB(0.8, 0.0, 0.0)
+				}
+				x1, y1, z1 := s.convertCoordinate(node.x, node.y)
+				x2, y2, z2 := s.convertCoordinate(pair.x, pair.y)
+				s.gl.Line3(x1, y1, z1, x2, y2, z2)
+			}
+		}
 	}
 }
 
@@ -157,4 +222,22 @@ func (s *Sphere) convertCoordinate(xi, yi float64) (xo, yo, zo float64) {
 	yo = math.Sin(yi)
 	zo = math.Sin(xi) * math.Cos(yi)
 	return
+}
+
+func (n *Node) hasLink(nid string) bool {
+	for _, v := range n.links {
+		if v == nid {
+			return true
+		}
+	}
+	return false
+}
+
+func (n *Node) hasRequired2D(nid string) bool {
+	for _, v := range n.required2D {
+		if v == nid {
+			return true
+		}
+	}
+	return false
 }
