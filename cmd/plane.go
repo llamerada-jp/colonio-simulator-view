@@ -24,9 +24,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var sphereCmd = &cobra.Command{
-	Use:   "sphere",
-	Short: "View data for sphere",
+var planeCmd = &cobra.Command{
+	Use:   "plane",
+	Short: "View data for plane",
 	Run: func(cmd *cobra.Command, args []string) {
 		// make accessor
 		accessor, err := utils.NewAccessor(mongoURI, mongoDataBase, mongoCollection)
@@ -36,16 +36,16 @@ var sphereCmd = &cobra.Command{
 		defer accessor.Disconnect()
 
 		// make drawer
-		drawer := &model2d.Sphere{}
+		drawer := &model2d.Plane{}
 
 		model := model2d.NewInstance(accessor, drawer, utils.NewGL(imageName))
 		err = model.Run()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "sphere:%v", err)
+			fmt.Fprintf(os.Stderr, "plane:%v", err)
 		}
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(sphereCmd)
+	rootCmd.AddCommand(planeCmd)
 }

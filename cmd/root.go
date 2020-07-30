@@ -37,7 +37,8 @@ func init() {
 	flags := rootCmd.PersistentFlags()
 	flags.StringVarP(&imageName, "image-name", "i", "", "Image path and name pattern like hoge/foo@.png (@ will be replace by index like 001, 002...)")
 	flags.StringVarP(&mongoURI, "uri", "u", "mongodb://localhost:27017", "URI of mongoDB to get source data")
-	flags.StringVarP(&mongoDataBase, "database", "d", "logs", "database name of mongoDB to get source data")
+	flags.StringVarP(&mongoDataBase, "database", "d", "simulation", "database name of mongoDB to get source data")
+	flags.StringVarP(&mongoCollection, "collection", "c", "logs", "collection name of mongoDB to get source data")
 }
 
 // Execute is entry point for all commands

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package sphere
+package model2d
 
 import (
 	"log"
@@ -33,9 +33,14 @@ const (
 	messageRouting2DRequired = "routing 2d required"
 )
 
-// Sphere is the instance for sphere module
-type Sphere struct {
+type Drawer interface {
+	draw(*utils.GL, map[string]*Node, *time.Time) error
+}
+
+// Model2D is the instance for sphere module
+type Model2D struct {
 	accessor *utils.Accessor
+	drawer   Drawer
 	nodes    map[string]*Node
 	gl       *utils.GL
 }
@@ -78,16 +83,17 @@ func init() {
 }
 
 // NewInstance makes a new instance of Sphere
-func NewInstance(acc *utils.Accessor, gl *utils.GL) *Sphere {
-	return &Sphere{
-		accessor: acc,
+func NewInstance(accessor *utils.Accessor, drawer Drawer, gl *utils.GL) *Model2D {
+	return &Model2D{
+		accessor: accessor,
+		drawer:   drawer,
 		nodes:    make(map[string]*Node),
 		gl:       gl,
 	}
 }
 
 // Run is an entory point for sphere module
-func (s *Sphere) Run() error {
+func (s *Model2D) Run() error {
 	// get time range from mongodb
 	current, err := s.accessor.GetEarliestTime()
 	if err != nil {
@@ -125,13 +131,15 @@ func (s *Sphere) Run() error {
 		}
 
 		// draw data
-		s.draw(current)
+		if err = s.drawer.draw(s.gl, s.nodes, current); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func (s *Sphere) updateByLogs(current *time.Time) error {
+func (s *Model2D) updateByLogs(current *time.Time) error {
 	records, err := s.accessor.GetByTime(current)
 	if err != nil {
 		return err
@@ -181,7 +189,7 @@ func (s *Sphere) updateByLogs(current *time.Time) error {
 	return nil
 }
 
-func (s *Sphere) getNode(record *utils.Record) *Node {
+func (s *Model2D) getNode(record *utils.Record) *Node {
 	nid := record.NID
 	if _, ok := s.nodes[nid]; !ok {
 		s.nodes[nid] = &Node{
@@ -191,37 +199,6 @@ func (s *Sphere) getNode(record *utils.Record) *Node {
 	node := s.nodes[nid]
 	node.timestamp = record.TimeNtv
 	return node
-}
-
-func (s *Sphere) draw(current *time.Time) {
-	for _, node := range s.nodes {
-		s.gl.SetRGB(0.0, 0.8, 0.2)
-		s.gl.Point3(s.convertCoordinate(node.x, node.y))
-
-		for _, link := range node.links {
-			if pair, ok := s.nodes[link]; ok {
-				if pair.hasLink(node.nid) {
-					if node.hasRequired2D(pair.nid) {
-						s.gl.SetRGB(0.0, 1.0, 0.2)
-					} else {
-						s.gl.SetRGB(0.6, 0.6, 0.6)
-					}
-				} else {
-					s.gl.SetRGB(0.8, 0.0, 0.0)
-				}
-				x1, y1, z1 := s.convertCoordinate(node.x, node.y)
-				x2, y2, z2 := s.convertCoordinate(pair.x, pair.y)
-				s.gl.Line3(x1, y1, z1, x2, y2, z2)
-			}
-		}
-	}
-}
-
-func (s *Sphere) convertCoordinate(xi, yi float64) (xo, yo, zo float64) {
-	xo = math.Cos(xi) * math.Cos(yi)
-	yo = math.Sin(yi)
-	zo = math.Sin(xi) * math.Cos(yi)
-	return
 }
 
 func (n *Node) hasLink(nid string) bool {
