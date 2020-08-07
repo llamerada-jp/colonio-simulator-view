@@ -27,6 +27,7 @@ import (
 )
 
 const (
+	timeout                  = 4 * time.Second
 	messageCurrentPosition   = "current position"
 	messageLinks             = "links"
 	messageRouting1DRequired = "routing 1d required"
@@ -47,6 +48,7 @@ type Model2D struct {
 
 // Node containes last information for each time
 type Node struct {
+	enable     bool
 	nid        string
 	x          float64
 	y          float64
@@ -186,6 +188,25 @@ func (s *Model2D) updateByLogs(current *time.Time) error {
 			}
 		}
 	}
+
+	// disable timeout node
+	for nid, node := range s.nodes {
+		if node.timestamp.Add(timeout).After(*current) {
+			node.enable = true
+			continue
+		}
+
+		node.enable = false
+		for _, nextNid := range node.links {
+			if next, ok := s.nodes[nextNid]; ok {
+				if next.timestamp.Add(timeout).After(*current) && next.hasLink(nid) {
+					node.enable = true
+					break
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -193,7 +214,8 @@ func (s *Model2D) getNode(record *utils.Record) *Node {
 	nid := record.NID
 	if _, ok := s.nodes[nid]; !ok {
 		s.nodes[nid] = &Node{
-			nid: nid,
+			enable: true,
+			nid:    nid,
 		}
 	}
 	node := s.nodes[nid]

@@ -10,6 +10,9 @@ type Plane struct{}
 
 func (s *Plane) draw(gl *utils.GL, nodes map[string]*Node, current *time.Time) error {
 	for _, node := range nodes {
+		if !node.enable {
+			continue
+		}
 		gl.SetRGB(0.0, 0.8, 0.2)
 		gl.Point3(node.x, node.y, 0)
 
