@@ -110,6 +110,8 @@ func (g *GL) Loop() bool {
 	defer func() {
 		glfw.PollEvents()
 		g.checkWindowSize()
+		gl.Enable(gl.DEPTH_TEST)
+		gl.DepthFunc(gl.LESS)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 	}()
 
