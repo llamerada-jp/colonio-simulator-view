@@ -20,6 +20,7 @@ import (
 	"log"
 	"math"
 	"runtime"
+	"sort"
 	"time"
 
 	"github.com/llamerada-jp/simulator-view/pkg/utils"
@@ -49,6 +50,7 @@ type Model2D struct {
 // Node containes last information for each time
 type Node struct {
 	enable     bool
+	group      int
 	nid        string
 	x          float64
 	y          float64
@@ -131,6 +133,8 @@ func (s *Model2D) Run() error {
 		if err = s.updateByLogs(current); err != nil {
 			return err
 		}
+		s.disableTimeoutNode(current)
+		s.setGroupNumber()
 
 		// draw data
 		if err = s.drawer.draw(s.gl, s.nodes, current); err != nil {
@@ -189,7 +193,10 @@ func (s *Model2D) updateByLogs(current *time.Time) error {
 		}
 	}
 
-	// disable timeout node
+	return nil
+}
+
+func (s *Model2D) disableTimeoutNode(current *time.Time) {
 	for nid, node := range s.nodes {
 		if node.timestamp.Add(timeout).After(*current) {
 			node.enable = true
@@ -206,8 +213,76 @@ func (s *Model2D) updateByLogs(current *time.Time) error {
 			}
 		}
 	}
+}
 
-	return nil
+type group struct {
+	count  int
+	assign int
+}
+
+type groups []*group
+
+func (g groups) Len() int {
+	return len(g)
+}
+
+func (g groups) Swap(i, j int) {
+	g[i], g[j] = g[j], g[i]
+}
+
+func (g groups) Less(i, j int) bool {
+	return g[i].count > g[j].count
+}
+
+func (s *Model2D) setGroupNumber() {
+	for _, node := range s.nodes {
+		node.group = 0
+	}
+
+	// assign temp ID
+	groupMap := make(map[int]*group)
+	for _, node := range s.nodes {
+		if node.group == 0 {
+			idx := len(groupMap) + 1
+			groupMap[idx] = &group{
+				count: s.findGroup(idx, node),
+			}
+		}
+	}
+
+	// order by member count
+	groupOrder := make(groups, 0)
+	for _, v := range groupMap {
+		groupOrder = append(groupOrder, v)
+	}
+	sort.Sort(groupOrder)
+	for idx, v := range groupOrder {
+		v.assign = idx + 1
+	}
+
+	// assign ID 0 for very small group
+	for _, g := range groupOrder {
+		if g.count < 3 {
+			g.assign = 0
+		}
+	}
+
+	// assign new ID
+	for _, node := range s.nodes {
+		node.group = groupMap[node.group].assign
+	}
+}
+
+func (s *Model2D) findGroup(group int, node *Node) int {
+	node.group = group
+	count := 1
+	for _, linkNid := range node.links {
+		link := s.nodes[linkNid]
+		if link.enable && link.group == 0 {
+			count += s.findGroup(group, link)
+		}
+	}
+	return count
 }
 
 func (s *Model2D) getNode(record *utils.Record) *Node {
