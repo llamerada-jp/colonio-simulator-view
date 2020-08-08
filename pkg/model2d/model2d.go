@@ -277,9 +277,10 @@ func (s *Model2D) findGroup(group int, node *Node) int {
 	node.group = group
 	count := 1
 	for _, linkNid := range node.links {
-		link := s.nodes[linkNid]
-		if link.enable && link.group == 0 {
-			count += s.findGroup(group, link)
+		if link, ok := s.nodes[linkNid]; ok {
+			if link.enable && link.group == 0 {
+				count += s.findGroup(group, link)
+			}
 		}
 	}
 	return count
