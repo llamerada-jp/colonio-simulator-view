@@ -198,6 +198,44 @@ func (g *GL) Point3(x, y, z float64) {
 	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
 }
 
+// Box3 draw box at 2d coordinate space
+func (g *GL) Box3(x, y, z, w float64) {
+	pointWidth := w * g.pixelWidth
+	pointHeight := w * g.pixelHeight
+	vertices := []float32{
+		float32(x - pointWidth), float32(y - pointHeight), float32(z),
+		float32(x + pointWidth), float32(y - pointHeight), float32(z),
+		float32(x + pointWidth), float32(y + pointHeight), float32(z),
+		float32(x - pointWidth), float32(y - pointHeight), float32(z),
+		float32(x - pointWidth), float32(y + pointHeight), float32(z),
+	}
+
+	fragments := []float32{
+		g.colorR, g.colorG, g.colorB,
+		g.colorR, g.colorG, g.colorB,
+		g.colorR, g.colorG, g.colorB,
+		g.colorR, g.colorG, g.colorB,
+		g.colorR, g.colorG, g.colorB,
+	}
+
+	var vertexArrayObject uint32
+	gl.GenVertexArrays(1, &vertexArrayObject)
+	defer gl.DeleteVertexArrays(1, &vertexArrayObject)
+	gl.BindVertexArray(vertexArrayObject)
+
+	vertexBuffer := g.makeAndUseBuffer(0, vertices)
+	defer gl.DeleteBuffers(1, &vertexBuffer)
+
+	fragmentBuffer := g.makeAndUseBuffer(1, fragments)
+	defer gl.DeleteBuffers(1, &fragmentBuffer)
+
+	gl.DrawArrays(gl.TRIANGLES, 0, 3)
+	gl.DrawArrays(gl.TRIANGLES, 2, 3)
+
+	gl.BindVertexArray(0)
+	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+}
+
 func (g *GL) setupProgram() {
 	program := gl.CreateProgram()
 	vertexShader := g.setupShader(`

@@ -28,11 +28,23 @@ import (
 )
 
 const (
+	AuthStatusNone    = 0
+	AuthStatusSuccess = 1
+	AuthStatusFailure = 2
+
+	LinkStatusOffline    = 0
+	LinkStatusConnecting = 1
+	LinkStatusOnline     = 2
+	LinkStatusClosing    = 3
+)
+
+const (
 	timeout                  = 4 * time.Second
 	messageCurrentPosition   = "current position"
 	messageLinks             = "links"
 	messageRouting1DRequired = "routing 1d required"
 	messageRouting2DRequired = "routing 2d required"
+	messageLinkStatus        = "link status"
 )
 
 type Drawer interface {
@@ -47,17 +59,21 @@ type Model2D struct {
 	gl       *utils.GL
 }
 
-// Node containes last information for each time
+// Node contains last information for each time
 type Node struct {
-	enable     bool
-	group      int
-	nid        string
-	x          float64
-	y          float64
-	links      []string
-	required1D []string
-	required2D []string
-	timestamp  time.Time
+	enable         bool
+	group          int
+	nid            string
+	x              float64
+	y              float64
+	links          []string
+	required1D     []string
+	required2D     []string
+	timestamp      time.Time
+	seedLinkStatus int
+	nodeLinkStatus int
+	authStatus     int
+	isOnlyone      bool
 }
 
 // ParameterCurrentPosition is for decoding parameter of `current position` log
@@ -68,17 +84,25 @@ type ParameterCurrentPosition struct {
 	} `bson:"coordinate"`
 }
 
-// ParameterLinks is for decodeing paramter of `links` log
+// ParameterLinks is for decodeing parameter of `links` log
 type ParameterLinks struct {
 	Nids []string `bson:"nids"`
 }
 
-// ParameterRouting2DRequired is for decodeing paramter of `routing 2d required` log
+// ParameterRouting2DRequired is for decodeing parameter of `routing 2d required` log
 type ParameterRouting2DRequired struct {
 	Nids map[string]struct {
 		X float64 `bson:"x"`
 		Y float64 `bson:"y"`
 	}
+}
+
+// ParameterLinkStatus is for decodeing parameter of `link status` log
+type ParameterLinkStatus struct {
+	Seed    int  `bson:"seed"`
+	Node    int  `bson:"node"`
+	Auth    int  `bson:"auth"`
+	Onlyone bool `bson:"onlyone"`
 }
 
 func init() {
@@ -190,6 +214,17 @@ func (s *Model2D) updateByLogs(current *time.Time) error {
 				node.required2D[idx] = k
 				idx++
 			}
+
+		case messageLinkStatus:
+			var p ParameterLinkStatus
+			if err = bson.Unmarshal(record.Param, &p); err != nil {
+				return err
+			}
+			node := s.getNode(&record)
+			node.seedLinkStatus = p.Seed
+			node.nodeLinkStatus = p.Node
+			node.authStatus = p.Auth
+			node.isOnlyone = p.Onlyone
 		}
 	}
 

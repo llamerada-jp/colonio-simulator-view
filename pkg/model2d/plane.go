@@ -27,6 +27,15 @@ func (s *Plane) draw(gl *utils.GL, nodes map[string]*Node, current *time.Time) e
 		gl.SetRGB(colorMap[colorIdx][0], colorMap[colorIdx][1], colorMap[colorIdx][2])
 		gl.Point3(node.x, node.y, -1.0)
 
+		if node.seedLinkStatus == LinkStatusOnline {
+			gl.SetRGB(1.0, 0.0, 0.0)
+			gl.Box3(node.x, node.y, -1.0, 6.0)
+		}
+		if node.isOnlyone {
+			gl.SetRGB(1.0, 0.0, 0.0)
+			gl.Box3(node.x, node.y, -1.0, 10.0)
+		}
+
 		for _, link := range node.links {
 			if pair, ok := nodes[link]; ok {
 				z := 0.0
