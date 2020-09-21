@@ -1,6 +1,7 @@
 package model2d
 
 import (
+	"log"
 	"math"
 	"time"
 
@@ -18,10 +19,15 @@ var sphereColorMap = [][]float32{
 }
 
 func (s *Sphere) draw(gl *utils.GL, nodes map[string]*Node, current *time.Time) error {
+	nodeCount := 0
+	seedCount := 0
+	onlyoneCount := 0
+
 	for _, node := range nodes {
 		if !node.enable {
 			continue
 		}
+		nodeCount++
 
 		colorIdx := node.group
 		if colorIdx >= len(colorMap) {
@@ -35,11 +41,13 @@ func (s *Sphere) draw(gl *utils.GL, nodes map[string]*Node, current *time.Time) 
 			x, y, z := s.convertCoordinate(node.x, node.y)
 			gl.SetRGB(s.reduceColorByZ([]float32{1.0, 0.0, 0.0}, z))
 			gl.Box3(x, y, z, 6.0)
+			seedCount++
 		}
 		if node.isOnlyone {
 			x, y, z := s.convertCoordinate(node.x, node.y)
 			gl.SetRGB(s.reduceColorByZ([]float32{1.0, 0.0, 0.0}, z))
 			gl.Box3(x, y, z, 10.0)
+			onlyoneCount++
 		}
 
 		for _, link := range node.links {
@@ -61,6 +69,8 @@ func (s *Sphere) draw(gl *utils.GL, nodes map[string]*Node, current *time.Time) 
 			}
 		}
 	}
+
+	log.Printf("node: %d/%d  seed: %d/%d", nodeCount, len(nodes), onlyoneCount, seedCount)
 
 	return nil
 }
