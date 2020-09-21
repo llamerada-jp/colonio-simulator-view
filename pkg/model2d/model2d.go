@@ -57,6 +57,7 @@ type Model2D struct {
 	drawer   Drawer
 	nodes    map[string]*Node
 	gl       *utils.GL
+	follow   bool
 }
 
 // Node contains last information for each time
@@ -111,12 +112,13 @@ func init() {
 }
 
 // NewInstance makes a new instance of Sphere
-func NewInstance(accessor *utils.Accessor, drawer Drawer, gl *utils.GL) *Model2D {
+func NewInstance(accessor *utils.Accessor, drawer Drawer, gl *utils.GL, follow bool) *Model2D {
 	return &Model2D{
 		accessor: accessor,
 		drawer:   drawer,
 		nodes:    make(map[string]*Node),
 		gl:       gl,
+		follow:   follow,
 	}
 }
 
@@ -144,13 +146,25 @@ func (s *Model2D) Run() error {
 	s.gl.Setup()
 	defer s.gl.Quit()
 
-	s.gl.SetImageDigit(int(math.Log10(last.Sub(*current).Seconds()) + 1.0))
+	if s.follow {
+		s.gl.SetImageDigit(6)
+	} else {
+		s.gl.SetImageDigit(int(math.Log10(last.Sub(*current).Seconds()) + 1.0))
+	}
 
 	// main loop until closing the window or existing data
 	for s.gl.Loop() {
 		*current = current.Add(time.Second)
-		if current.UnixNano() > last.UnixNano() {
-			break
+
+		if s.follow {
+			if current.UnixNano() > time.Now().Add(-5*time.Second).UnixNano() {
+				time.Sleep(1 * time.Second)
+			}
+
+		} else {
+			if current.UnixNano() > last.UnixNano() {
+				break
+			}
 		}
 
 		// update data

@@ -38,7 +38,7 @@ var sphereCmd = &cobra.Command{
 		// make drawer
 		drawer := &model2d.Sphere{}
 
-		model := model2d.NewInstance(accessor, drawer, utils.NewGL(imageName))
+		model := model2d.NewInstance(accessor, drawer, utils.NewGL(imageName), follow)
 		err = model.Run()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "sphere:%v", err)
