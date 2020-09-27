@@ -58,6 +58,7 @@ type Model2D struct {
 	nodes    map[string]*Node
 	gl       *utils.GL
 	follow   bool
+	tail     bool
 }
 
 // Node contains last information for each time
@@ -112,13 +113,14 @@ func init() {
 }
 
 // NewInstance makes a new instance of Sphere
-func NewInstance(accessor *utils.Accessor, drawer Drawer, gl *utils.GL, follow bool) *Model2D {
+func NewInstance(accessor *utils.Accessor, drawer Drawer, gl *utils.GL, follow, tail bool) *Model2D {
 	return &Model2D{
 		accessor: accessor,
 		drawer:   drawer,
 		nodes:    make(map[string]*Node),
 		gl:       gl,
 		follow:   follow,
+		tail:     tail,
 	}
 }
 
@@ -131,6 +133,15 @@ func (s *Model2D) Run() error {
 	}
 	if current == nil {
 		log.Fatalln("nothing data")
+	}
+
+	// tail option
+	if s.tail {
+		current, err = s.accessor.GetLastTime()
+		if err != nil {
+			return err
+		}
+		*current = current.Add(-10 * time.Second)
 	}
 
 	last, err := s.accessor.GetLastTime()

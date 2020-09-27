@@ -23,12 +23,13 @@ import (
 )
 
 var (
+	detailLevel     uint
 	follow          bool
 	imageName       string
-	detailLevel     uint
 	mongoURI        string
 	mongoDataBase   string
 	mongoCollection string
+	tail            bool
 )
 
 var rootCmd = &cobra.Command{
@@ -37,12 +38,13 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	flags := rootCmd.PersistentFlags()
+	flags.UintVarP(&detailLevel, "detail-leval", "l", 0, "Whether to draw detailed information")
 	flags.BoolVarP(&follow, "follow", "f", false, "Specify if the logs should be streamed")
 	flags.StringVarP(&imageName, "image-name", "i", "", "Image path and name pattern like hoge/foo@.png (@ will be replace by index like 001, 002...)")
-	flags.UintVarP(&detailLevel, "detail-leval", "l", 0, "Whether to draw detailed information")
 	flags.StringVarP(&mongoURI, "uri", "u", "mongodb://localhost:27017", "URI of mongoDB to get source data")
 	flags.StringVarP(&mongoDataBase, "database", "d", "simulation", "database name of mongoDB to get source data")
 	flags.StringVarP(&mongoCollection, "collection", "c", "logs", "collection name of mongoDB to get source data")
+	flags.BoolVarP(&tail, "tail", "t", false, "Output start with tail 10 seconds of the source data")
 }
 
 // Execute is entry point for all commands
