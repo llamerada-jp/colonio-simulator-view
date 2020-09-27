@@ -36,7 +36,7 @@ var sphereCmd = &cobra.Command{
 		defer accessor.Disconnect()
 
 		// make drawer
-		drawer := &model2d.Sphere{}
+		drawer := model2d.NewSphereDrawer(detailLevel)
 
 		model := model2d.NewInstance(accessor, drawer, utils.NewGL(imageName), follow)
 		err = model.Run()

@@ -30,8 +30,8 @@ import (
 )
 
 const (
-	width  = 1024
-	height = 1024
+	width  = 720
+	height = 720
 )
 
 // GL containing any instances of OpenGL

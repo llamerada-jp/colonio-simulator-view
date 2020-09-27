@@ -8,7 +8,10 @@ import (
 	"github.com/llamerada-jp/simulator-view/pkg/utils"
 )
 
-type Sphere struct{}
+// Sphere is a drawer instance for sphere coordinate system
+type Sphere struct {
+	detailLevel uint
+}
 
 var sphereScale = 0.95
 var sphereColorMap = [][]float32{
@@ -16,6 +19,13 @@ var sphereColorMap = [][]float32{
 	{0.0, 0.2, 1.0},
 	{0.0, 0.8, 0.2},
 	{1.0, 0.6, 0.0},
+}
+
+// NewSphereDrawer make sphere drawer instance
+func NewSphereDrawer(detailLevel uint) *Sphere {
+	return &Sphere{
+		detailLevel: detailLevel,
+	}
 }
 
 func (s *Sphere) draw(gl *utils.GL, nodes map[string]*Node, current *time.Time) error {
@@ -53,15 +63,20 @@ func (s *Sphere) draw(gl *utils.GL, nodes map[string]*Node, current *time.Time) 
 		for _, link := range node.links {
 			if pair, ok := nodes[link]; ok {
 				var rgb []float32
-				if pair.hasLink(node.nid) {
-					if node.hasRequired2D(pair.nid) {
+				if node.hasRequired2D(pair.nid) {
+					if pair.hasLink(node.nid) {
 						rgb = colorMap[colorIdx]
 					} else {
-						rgb = []float32{0.8, 0.8, 0.8}
+						rgb = []float32{0.8, 0.0, 0.0}
 					}
 				} else {
-					rgb = []float32{0.8, 0.0, 0.0}
+					if s.detailLevel >= 1 {
+						rgb = []float32{0.8, 0.8, 0.8}
+					} else {
+						continue
+					}
 				}
+
 				x1, y1, z1 := s.convertCoordinate(node.x, node.y)
 				x2, y2, z2 := s.convertCoordinate(pair.x, pair.y)
 				gl.SetRGB(s.reduceColorByZ(rgb, (z1+z2)/2.0))
@@ -76,7 +91,7 @@ func (s *Sphere) draw(gl *utils.GL, nodes map[string]*Node, current *time.Time) 
 }
 
 func (s *Sphere) reduceColorByZ(ci []float32, z float64) (r, g, b float32) {
-	rate := (float32(-z) + 1.0) / 2.0
+	rate := (float32(-z) + 1.0) / 1.2
 	r = 1.0 - ((1.0 - ci[0]) * rate)
 	g = 1.0 - ((1.0 - ci[1]) * rate)
 	b = 1.0 - ((1.0 - ci[2]) * rate)
