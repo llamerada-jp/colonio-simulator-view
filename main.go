@@ -15,7 +15,7 @@
  */
 package main
 
-import "github.com/llamerada-jp/simulator-view/cmd"
+import "github.com/llamerada-jp/colonio-simulator-view/cmd"
 
 func main() {
 	cmd.Execute()

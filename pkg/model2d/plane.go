@@ -3,7 +3,7 @@ package model2d
 import (
 	"time"
 
-	"github.com/llamerada-jp/simulator-view/pkg/utils"
+	"github.com/llamerada-jp/colonio-simulator-view/pkg/utils"
 )
 
 type Plane struct{}

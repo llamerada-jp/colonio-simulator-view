@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/llamerada-jp/simulator-view/pkg/model2d"
-	"github.com/llamerada-jp/simulator-view/pkg/utils"
+	"github.com/llamerada-jp/colonio-simulator-view/pkg/model2d"
+	"github.com/llamerada-jp/colonio-simulator-view/pkg/utils"
 	"github.com/spf13/cobra"
 )
 

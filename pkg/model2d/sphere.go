@@ -5,7 +5,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/llamerada-jp/simulator-view/pkg/utils"
+	"github.com/llamerada-jp/colonio-simulator-view/pkg/utils"
 )
 
 // Sphere is a drawer instance for sphere coordinate system

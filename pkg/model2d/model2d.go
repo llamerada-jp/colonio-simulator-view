@@ -23,7 +23,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/llamerada-jp/simulator-view/pkg/utils"
+	"github.com/llamerada-jp/colonio-simulator-view/pkg/utils"
 	"go.mongodb.org/mongo-driver/bson"
 )
 

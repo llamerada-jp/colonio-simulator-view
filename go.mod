@@ -1,10 +1,10 @@
-module github.com/llamerada-jp/simulator-view
+module github.com/llamerada-jp/colonio-simulator-view
 
-go 1.14
+go 1.16
 
 require (
-	github.com/go-gl/gl v0.0.0-20190320180904-bf2b1f2f34d7
-	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20200707082815-5321531c36a2
-	github.com/spf13/cobra v1.0.0
-	go.mongodb.org/mongo-driver v1.3.5
+	github.com/go-gl/gl v0.0.0-20210905235341-f7a045908259
+	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20210727001814-0db043d8d5be
+	github.com/spf13/cobra v1.2.1
+	go.mongodb.org/mongo-driver v1.7.2
 )
