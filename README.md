@@ -3,7 +3,7 @@
 Build
 
 ```
-$ sudo apt install libgl1-mesa-dev libxrandr-dev libxinerama-dev libxi-dev libxxf86vm-dev
+$ sudo apt install libgl1-mesa-dev libxrandr-dev libxinerama-dev libxi-dev libxxf86vm-dev libglfw3 libglfw3-dev
 $ go build .
 ```
 
